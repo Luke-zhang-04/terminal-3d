@@ -8,6 +8,17 @@ pub struct Vector3 {
     pub z: f64,
 }
 
+#[macro_export]
+macro_rules! vector3 {
+    ($x:expr, $y:expr, $z:expr) => {
+        Vector3 {
+            x: $x as f64,
+            y: $y as f64,
+            z: $z as f64,
+        }
+    };
+}
+
 impl Vector3 {
     pub fn new(x: f64, y: f64, z: f64) -> Vector3 {
         Vector3 { x, y, z }
@@ -217,6 +228,26 @@ impl From<(i64, i64, i64)> for Vector3 {
             x: tuple.0 as f64,
             y: tuple.1 as f64,
             z: tuple.2 as f64,
+        }
+    }
+}
+
+impl From<[f64; 3]> for Vector3 {
+    fn from(arr: [f64; 3]) -> Self {
+        Vector3 {
+            x: arr[0],
+            y: arr[1],
+            z: arr[2],
+        }
+    }
+}
+
+impl From<[i64; 3]> for Vector3 {
+    fn from(arr: [i64; 3]) -> Self {
+        Vector3 {
+            x: arr[0] as f64,
+            y: arr[1] as f64,
+            z: arr[2] as f64,
         }
     }
 }
