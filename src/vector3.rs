@@ -49,7 +49,11 @@ impl Vector3 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
-    pub fn normaize(&self) -> Vector3 {
+    pub fn components(self) -> [f64; 3] {
+        [self.x, self.y, self.z]
+    }
+
+    pub fn normalize(&self) -> Vector3 {
         let mag = self.magnitude();
 
         Vector3 {

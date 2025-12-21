@@ -1,3 +1,4 @@
+use std::f64::consts::PI;
 use std::fmt;
 use std::ops;
 
@@ -72,6 +73,26 @@ impl Matrix3 {
         matrix3!((1, 0, 0), (0, 1, 0), (0, 0, 1))
     }
 
+    pub fn row(&self, row: usize) -> Vector3 {
+        Vector3::from(self.mat[row])
+    }
+
+    pub fn set_row(&mut self, row: usize, vec: Vector3) {
+        self.mat[row][0] = vec.x;
+        self.mat[row][1] = vec.y;
+        self.mat[row][2] = vec.z;
+    }
+
+    pub fn col(&self, col: usize) -> Vector3 {
+        Vector3::new(self.mat[0][col], self.mat[1][col], self.mat[2][col])
+    }
+
+    pub fn set_col(&mut self, col: usize, vec: Vector3) {
+        self.mat[0][col] = vec.x;
+        self.mat[1][col] = vec.y;
+        self.mat[2][col] = vec.z;
+    }
+
     pub fn transpose(&self) -> Matrix3 {
         // I could've used a for loop I guess, but this probably performs better or something
         Matrix3 {
@@ -93,7 +114,66 @@ impl Matrix3 {
     }
 
     pub fn is_singular(self) -> bool {
-        self.determinant() < f64::EPSILON
+        self.determinant().abs() < f64::EPSILON
+    }
+
+    pub fn is_orthonormal(&self) -> bool {
+        for row in 0..=2 {
+            let vec = Vector3::from(self.mat[row]);
+            if (vec.magnitude() - 1.0).abs() >= f64::EPSILON {
+                return false;
+            }
+
+            for compare in row + 1..=2 {
+                if (vec.angle(&Vector3::from(self.mat[compare])).abs() - (PI / 2.0)).abs()
+                    >= f64::EPSILON
+                {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    pub fn normalize_rows(self) -> Matrix3 {
+        Matrix3 {
+            mat: repeat_row!(|row: usize| self.row(row).normalize().components()),
+        }
+    }
+
+    pub fn normalize_cols(self) -> Matrix3 {
+        let mut mat = Matrix3::zero();
+
+        for col in 0..=2 {
+            let vec = self.col(col).normalize();
+
+            mat[0][col] = vec.x;
+            mat[1][col] = vec.y;
+            mat[2][col] = vec.z;
+        }
+
+        mat
+    }
+
+    /// Orthonormalize by using Gram-Schmidt, then normalizing by column
+    /// (however note that if a matrix is orthonormal then both its rows and columns are orthonormal bases)
+    /// Assumes columns of matrix are linearly independent
+    pub fn orthonormalize(&self) -> Matrix3 {
+        let mut mat = self.clone();
+
+        for col in 1..=2 {
+            let original = mat.col(col);
+            let mut vec = mat.col(col);
+
+            for prev in 0..col {
+                vec -= original.project(mat.col(prev));
+            }
+
+            mat.set_col(col, vec);
+        }
+
+        mat.normalize_cols()
     }
 
     /// Get the minor of the i-th row and j-th column
@@ -139,7 +219,7 @@ impl Matrix3 {
     pub fn invert(&self) -> Option<Matrix3> {
         let det = self.determinant();
 
-        if det < f64::EPSILON {
+        if det.abs() < f64::EPSILON {
             None
         } else {
             Some((1.0 / det) * self.adjugate())
@@ -153,6 +233,7 @@ impl Matrix3 {
         )
     }
 }
+
 impl ops::Add<Matrix3> for Matrix3 {
     type Output = Matrix3;
 
@@ -272,7 +353,7 @@ impl PartialEq for Matrix3 {
     fn eq(&self, other: &Self) -> bool {
         for row in 0..=2 {
             for col in 0..=2 {
-                if !(self.mat[row][col] - other.mat[row][col] < f64::EPSILON) {
+                if (self.mat[row][col] - other.mat[row][col]).abs() >= f64::EPSILON {
                     return false;
                 }
             }
@@ -351,5 +432,21 @@ mod tests {
         assert_eq!(mat * mat.invert().unwrap(), Matrix3::id());
         // Due to floating-point precision issues, this assert won't work
         // assert_eq!(mat * mat, matrix3!((0, 1, 0), (-1, 0, 0), (0, 0, 1)));
+        assert_eq!(mat.is_orthonormal(), true);
+        assert_eq!(mat.orthonormalize(), mat);
+    }
+
+    #[test]
+    fn orthonormalize() {
+        let mat = matrix3!(
+            (1, 67, 10), // I'm cooked
+            (0, 67, f64::EPSILON),
+            (0, 0, i32::MAX)
+        );
+
+        assert_eq!(mat.is_orthonormal(), false);
+        assert_eq!(mat.orthonormalize().is_orthonormal(), true);
+        // Happens to be the case with this particular matrix using the Gram-Schmidt procedure like this
+        assert_eq!(mat.orthonormalize(), Matrix3::id());
     }
 }
