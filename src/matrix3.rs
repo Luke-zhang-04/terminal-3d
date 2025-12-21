@@ -156,11 +156,12 @@ impl Matrix3 {
         mat
     }
 
-    /// Orthonormalize by using Gram-Schmidt, then normalizing by column
-    /// (however note that if a matrix is orthonormal then both its rows and columns are orthonormal bases)
+    /// Orthonormalize using Gram-Schmidt, normalizing each column as we go
     /// Assumes columns of matrix are linearly independent
     pub fn orthonormalize(&self) -> Matrix3 {
         let mut mat = self.clone();
+
+        mat.set_col(0, mat.col(0).normalize());
 
         for col in 1..=2 {
             let original = mat.col(col);
@@ -170,10 +171,10 @@ impl Matrix3 {
                 vec -= original.project(mat.col(prev));
             }
 
-            mat.set_col(col, vec);
+            mat.set_col(col, vec.normalize());
         }
 
-        mat.normalize_cols()
+        mat
     }
 
     /// Get the minor of the i-th row and j-th column
