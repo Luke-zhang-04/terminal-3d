@@ -1,4 +1,5 @@
 pub mod matrix3;
+pub mod render;
 pub mod terminal;
 pub mod vector3;
 pub mod world;
@@ -10,6 +11,7 @@ use crate::{terminal::Terminal, vector3::Vector3, world::World, world_object::Wo
 
 struct Square {
     vertices: Vec<Vector3>,
+    edges: Vec<(usize, usize)>,
 }
 
 impl Square {
@@ -17,10 +19,11 @@ impl Square {
         Square {
             vertices: vec![
                 vector3!(0, 0, 0),
-                vector3!(10, 0, 0),
-                vector3!(10, 10, 0),
+                vector3!(20, 0, 0),
+                vector3!(20, 10, 0),
                 vector3!(0, 10, 0),
             ],
+            edges: vec![(0, 1), (1, 2), (2, 3), (3, 0)],
         }
     }
 }
@@ -28,6 +31,14 @@ impl Square {
 impl WorldObject for Square {
     fn vectices(&self) -> Vec<Vector3> {
         self.vertices.clone()
+    }
+
+    fn vertex_style(&self) -> terminal::Style {
+        ('X', terminal::Color::Blue, terminal::Decor::HighIntensity)
+    }
+
+    fn edges(&self) -> Vec<(usize, usize)> {
+        self.edges.clone()
     }
 }
 

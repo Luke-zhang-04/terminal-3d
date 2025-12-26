@@ -1,6 +1,9 @@
-use crate::world::World;
+use std::io::{self, Write};
+
+use crate::{render::bresenham_line_3d, world::World};
 
 // Adapted from https://stackoverflow.com/a/28938235/12370337
+#[derive(Clone, Copy)]
 pub enum Color {
     Reset,
     Black,
@@ -13,6 +16,7 @@ pub enum Color {
     White,
 }
 
+#[derive(Clone, Copy)]
 pub enum Decor {
     None,
     Bold,
@@ -48,6 +52,23 @@ impl Terminal<'_> {
         }
     }
 
+    // Plot character, assuming x and y are in bounds
+    fn plot_character(&mut self, x: u16, y: u16, depth: f64, style: Style, frame: u64) {
+        let index = y as usize * self.term_width as usize + x as usize;
+
+        if self.display[index].frame != frame || self.display[index].dist > depth {
+            self.display[index] = Character {
+                frame,
+                style: style,
+                dist: depth,
+            }
+        }
+    }
+
+    fn is_in_bounds(&self, x: i64, y: i64) -> bool {
+        x >= 0 && (x as u16) < self.term_width && y >= 0 && (y as u16) < self.term_height
+    }
+
     pub fn render(&mut self, frame: u64) {
         let size = termsize::get().unwrap();
 
@@ -68,37 +89,44 @@ impl Terminal<'_> {
         }
 
         for obj in self.world.values() {
-            for vertex in obj.vectices() {
-                println!(
-                    "{} {} {} {}",
-                    vertex.x, vertex.y, self.term_width, self.term_height
-                );
-                if vertex.x >= 0.0
-                    && vertex.x < self.term_width as f64
-                    && vertex.y >= 0.0
-                    && vertex.y < self.term_height as f64
-                {
-                    let index = ((vertex.y.round() as i64) * self.term_width as i64
-                        + vertex.x.round() as i64) as usize;
-
-                    if self.display[index].frame != frame || self.display[index].dist > vertex.z {
-                        self.display[index] = Character {
-                            frame,
-                            style: obj.vertex_style(),
-                            dist: vertex.z,
-                        }
-                    }
+            let vertices = obj.vectices();
+            let vertex_style = obj.vertex_style();
+            let edge_style = obj.edge_style();
+            for vertex in &vertices {
+                let (x, y) = (vertex.x.round() as i64, vertex.y.round() as i64);
+                if self.is_in_bounds(x, y) {
+                    self.plot_character(x as u16, y as u16, vertex.z, vertex_style, frame);
                 }
             }
-        }
 
-        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-        for i in 0..self.display.len() {
-            if i != 0 && i % (self.term_width as usize) == 0 {
-                print!("\n{}", self.display[i].style.0);
-            } else {
-                print!("{}", self.display[i].style.0);
+            for edge in obj.edges() {
+                bresenham_line_3d(
+                    vertices[edge.0],
+                    vertices[edge.1],
+                    |pixel: (i64, i64), depth: f64| {
+                        if self.is_in_bounds(pixel.0, pixel.1) {
+                            self.plot_character(
+                                pixel.0 as u16,
+                                pixel.1 as u16,
+                                depth,
+                                edge_style,
+                                frame,
+                            );
+                        }
+                    },
+                );
             }
         }
+
+        let mut lock = io::stdout().lock();
+        write!(lock, "{esc}[2J{esc}[1;1H", esc = 27 as char).unwrap();
+        for i in 0..self.display.len() {
+            if i != 0 && i % (self.term_width as usize) == 0 {
+                write!(lock, "\n{}", self.display[i].style.0).unwrap();
+            } else {
+                write!(lock, "{}", self.display[i].style.0).unwrap();
+            }
+        }
+        lock.flush().unwrap();
     }
 }
