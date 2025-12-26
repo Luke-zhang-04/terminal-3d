@@ -44,7 +44,7 @@ pub fn bresenham_line_3d(
 
         err += dy.abs();
         if 2 * err >= dx {
-            y += 1;
+            y += dy.signum();
             err -= dx;
         }
         depth += depth_inc;

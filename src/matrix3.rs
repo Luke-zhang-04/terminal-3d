@@ -8,7 +8,7 @@ use crate::vector3::Vector3;
 /// We won't be needing any other matrix size (except perhaps 2x2), so we don't really need to generalize
 #[derive(Clone, Copy)]
 pub struct Matrix3 {
-    mat: [[f64; 3]; 3],
+    pub mat: [[f64; 3]; 3],
 }
 
 #[macro_export]

@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::{render::bresenham_line_3d, world::World};
+use crate::{render::bresenham_line_3d, world_object::WorldObject};
 
 // Adapted from https://stackoverflow.com/a/28938235/12370337
 #[derive(Clone, Copy)]
@@ -35,17 +35,15 @@ struct Character {
     pub dist: f64,
 }
 
-pub struct Terminal<'a> {
-    world: &'a World,
+pub struct Terminal {
     term_width: u16,
     term_height: u16,
     display: Vec<Character>,
 }
 
-impl Terminal<'_> {
-    pub fn new(world: &'_ World) -> Terminal<'_> {
+impl Terminal {
+    pub fn new() -> Terminal {
         Terminal {
-            world,
             term_width: 0,
             term_height: 0,
             display: vec![],
@@ -69,7 +67,7 @@ impl Terminal<'_> {
         x >= 0 && (x as u16) < self.term_width && y >= 0 && (y as u16) < self.term_height
     }
 
-    pub fn render(&mut self, frame: u64) {
+    pub fn pre_render(&mut self) {
         let size = termsize::get().unwrap();
 
         if self.term_height != size.rows || self.term_height != size.cols {
@@ -87,37 +85,39 @@ impl Terminal<'_> {
                 });
             }
         }
+    }
 
-        for obj in self.world.values() {
-            let vertices = obj.vectices();
-            let vertex_style = obj.vertex_style();
-            let edge_style = obj.edge_style();
-            for vertex in &vertices {
-                let (x, y) = (vertex.x.round() as i64, vertex.y.round() as i64);
-                if self.is_in_bounds(x, y) {
-                    self.plot_character(x as u16, y as u16, vertex.z, vertex_style, frame);
-                }
-            }
-
-            for edge in obj.edges() {
-                bresenham_line_3d(
-                    vertices[edge.0],
-                    vertices[edge.1],
-                    |pixel: (i64, i64), depth: f64| {
-                        if self.is_in_bounds(pixel.0, pixel.1) {
-                            self.plot_character(
-                                pixel.0 as u16,
-                                pixel.1 as u16,
-                                depth,
-                                edge_style,
-                                frame,
-                            );
-                        }
-                    },
-                );
+    pub fn buffer_world_object(&mut self, obj: &dyn WorldObject, frame: u64) {
+        let vertices = obj.vectices();
+        let vertex_style = obj.vertex_style();
+        let edge_style = obj.edge_style();
+        for vertex in &vertices {
+            let (x, y) = (vertex.x.round() as i64, vertex.y.round() as i64);
+            if self.is_in_bounds(x, y) {
+                self.plot_character(x as u16, y as u16, vertex.z, vertex_style, frame);
             }
         }
 
+        for edge in obj.edges() {
+            bresenham_line_3d(
+                vertices[edge.0],
+                vertices[edge.1],
+                |pixel: (i64, i64), depth: f64| {
+                    if self.is_in_bounds(pixel.0, pixel.1) {
+                        self.plot_character(
+                            pixel.0 as u16,
+                            pixel.1 as u16,
+                            depth,
+                            edge_style,
+                            frame,
+                        );
+                    }
+                },
+            );
+        }
+    }
+
+    pub fn render(&mut self) {
         let mut lock = io::stdout().lock();
         write!(lock, "{esc}[2J{esc}[1;1H", esc = 27 as char).unwrap();
         for i in 0..self.display.len() {

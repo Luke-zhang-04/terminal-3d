@@ -23,4 +23,6 @@ pub trait WorldObject {
     fn face_style(&self) -> terminal::Style {
         ('.', terminal::Color::Reset, terminal::Decor::None)
     }
+
+    fn update(&mut self, _frame: u64) {}
 }
