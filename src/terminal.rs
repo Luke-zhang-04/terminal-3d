@@ -43,6 +43,8 @@ pub struct Terminal {
 
 impl Terminal {
     pub fn new() -> Terminal {
+        print!("{esc}[2J", esc = 27 as char);
+
         Terminal {
             term_width: 0,
             term_height: 0,
@@ -119,7 +121,7 @@ impl Terminal {
 
     pub fn render(&mut self) {
         let mut lock = io::stdout().lock();
-        write!(lock, "{esc}[2J{esc}[1;1H", esc = 27 as char).unwrap();
+        write!(lock, "{esc}[H", esc = 27 as char).unwrap();
         for i in 0..self.display.len() {
             if i != 0 && i % (self.term_width as usize) == 0 {
                 write!(lock, "\n{}", self.display[i].style.0).unwrap();

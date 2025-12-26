@@ -66,7 +66,7 @@ impl WorldObject for Square {
     }
 }
 
-static FPS: u16 = 12;
+static FPS: u16 = 24;
 
 fn main() {
     let mut world = World::new();
@@ -76,7 +76,7 @@ fn main() {
     let mut terminal = Terminal::new();
     let frame_time = Duration::from_secs_f64(1.0 / FPS as f64);
 
-    for frame in 1..=50 {
+    for frame in 1..=200 {
         let start = time::Instant::now();
         for obj in world.values_mut() {
             obj.deref_mut().update(frame);
