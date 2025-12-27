@@ -203,7 +203,7 @@ impl ops::Neg for Vector3 {
         Vector3 {
             x: -self.x,
             y: -self.y,
-            z: -self.y,
+            z: -self.z,
         }
     }
 }
