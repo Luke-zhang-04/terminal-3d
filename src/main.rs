@@ -41,7 +41,11 @@ impl WorldObject for Square {
     }
 
     fn vertex_style(&self) -> terminal::Style {
-        ('X', terminal::Color::Blue, terminal::Decor::HighIntensity)
+        (
+            'X',
+            terminal::Color::Blue,
+            terminal::Decor::BoldHighIntensity,
+        )
     }
 
     fn edges(&self) -> Vec<(usize, usize)> {

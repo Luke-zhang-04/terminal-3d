@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use crate::{render::bresenham_line_3d, world_object::WorldObject};
 
 // Adapted from https://stackoverflow.com/a/28938235/12370337
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Color {
     Reset,
     Black,
@@ -16,18 +16,53 @@ pub enum Color {
     White,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Decor {
     None,
     Bold,
     Underline,
-    Background,
     HighIntensity,
     BoldHighIntensity,
-    HighIntensityBackground,
 }
 
 pub type Style = (char, Color, Decor);
+
+fn get_style_escape(style: Style) -> String {
+    if style.1 == Color::Reset {
+        return String::from("\x1b[0m");
+    }
+
+    let color_num_1 = if style.2 == Decor::HighIntensity || style.2 == Decor::BoldHighIntensity {
+        9
+    } else {
+        3
+    };
+    let color_num_2 = match style.1 {
+        Color::Reset => -1,
+        Color::Black => 0,
+        Color::Red => 1,
+        Color::Green => 2,
+        Color::Yellow => 3,
+        Color::Blue => 4,
+        Color::Purple => 5,
+        Color::Cyan => 6,
+        Color::White => 7,
+    };
+    let decor_num = match style.2 {
+        Decor::None => 0,
+        Decor::Bold => 1,
+        Decor::Underline => 4,
+        Decor::HighIntensity => 0,
+        Decor::BoldHighIntensity => 1,
+    };
+
+    format!(
+        "\x1b[{decor};{color1}{color2}m",
+        decor = decor_num,
+        color1 = color_num_1,
+        color2 = color_num_2
+    )
+}
 
 struct Character {
     pub frame: u64,
@@ -43,6 +78,8 @@ pub struct Terminal {
 
 impl Terminal {
     pub fn new() -> Terminal {
+        // \x1b[2J: clear screen
+        // \x1b[H: move cursor to top-left
         print!("{esc}[2J", esc = 27 as char);
 
         Terminal {
@@ -120,13 +157,22 @@ impl Terminal {
     }
 
     pub fn render(&mut self) {
+        let mut prev_style: Style = (' ', Color::Reset, Decor::None);
         let mut lock = io::stdout().lock();
         write!(lock, "{esc}[H", esc = 27 as char).unwrap();
+        write!(lock, "{}", get_style_escape(prev_style)).unwrap();
         for i in 0..self.display.len() {
+            let item = &self.display[i];
+
+            if item.style.1 != prev_style.1 || item.style.2 != prev_style.2 {
+                prev_style = item.style;
+                write!(lock, "{}", get_style_escape(prev_style)).unwrap();
+            }
+
             if i != 0 && i % (self.term_width as usize) == 0 {
-                write!(lock, "\n{}", self.display[i].style.0).unwrap();
+                write!(lock, "\n{}", item.style.0).unwrap();
             } else {
-                write!(lock, "{}", self.display[i].style.0).unwrap();
+                write!(lock, "{}", item.style.0).unwrap();
             }
         }
         lock.flush().unwrap();
