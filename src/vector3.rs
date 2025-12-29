@@ -63,11 +63,11 @@ impl Vector3 {
         }
     }
 
-    pub fn dot(&self, rhs: &Vector3) -> f64 {
+    pub fn dot(&self, rhs: Vector3) -> f64 {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
-    pub fn angle(&self, other: &Vector3) -> f64 {
+    pub fn angle(&self, other: Vector3) -> f64 {
         (self.dot(other) / (self.magnitude() * other.magnitude())).acos()
     }
 
@@ -83,7 +83,31 @@ impl Vector3 {
     pub fn project(self, onto: Vector3) -> Vector3 {
         // Project u onto v = ((u dot v) / |v|^2) * v
         // |v|^2 = v dot v
-        onto * (self.dot(&onto) / onto.dot(&onto))
+        onto * (self.dot(onto) / onto.dot(onto))
+    }
+
+    pub fn neg_x(self) -> Vector3 {
+        Vector3 {
+            x: -self.x,
+            y: self.y,
+            z: self.z,
+        }
+    }
+
+    pub fn neg_y(self) -> Vector3 {
+        Vector3 {
+            x: self.x,
+            y: -self.y,
+            z: self.z,
+        }
+    }
+
+    pub fn neg_z(self) -> Vector3 {
+        Vector3 {
+            x: self.x,
+            y: self.y,
+            z: -self.z,
+        }
     }
 
     pub fn to_string(&self) -> String {
@@ -171,9 +195,9 @@ impl ops::Mul<Vector3> for Vector3 {
 
     fn mul(self, rhs: Vector3) -> Self::Output {
         Vector3 {
-            x: self.y * rhs.z - self.z - rhs.y,
+            x: self.y * rhs.z - self.z * rhs.y,
             y: self.z * rhs.x - self.x * rhs.z,
-            z: self.x * rhs.y - self.y - rhs.x,
+            z: self.x * rhs.y - self.y * rhs.x,
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::{matrix3::Matrix3, terminal, vector3::Vector3, world_object::WorldObj
 pub struct RotatingCube {
     vertices: Vec<Vector3>,
     edges: Vec<(usize, usize)>,
+    rotation_point: Vector3,
 }
 
 impl RotatingCube {
@@ -35,6 +36,7 @@ impl RotatingCube {
                 (2, 6),
                 (3, 7),
             ],
+            rotation_point: vector3!(5, 5, -5),
         }
     }
 }
@@ -66,10 +68,16 @@ impl WorldObject for RotatingCube {
             (0, 1, 0),
             (angle.sin(), 0, angle.cos())
         );
-        let rotation_center = vector3!(5, 5, -5);
-
         for vertex in &mut self.vertices {
-            *vertex = mat * (*vertex - rotation_center) + rotation_center;
+            *vertex = mat * (*vertex - self.rotation_point) + self.rotation_point;
+
+            // if (frame / 10) % 2 == 0 {
+            //     *vertex += vector3!(0, 1, 0);
+            //     self.rotation_point += vector3!(0, 1, 0);
+            // } else {
+            //     *vertex += vector3!(0, -1, 0);
+            //     self.rotation_point += vector3!(0, -1, 0);
+            // }
         }
     }
 }

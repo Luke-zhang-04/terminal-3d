@@ -1,16 +1,16 @@
 use crate::world_object::WorldObject;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::ops::{Deref, DerefMut};
 
 pub struct World {
-    objects: HashMap<i64, Box<dyn WorldObject>>,
+    objects: BTreeMap<i64, Box<dyn WorldObject>>,
     counter: i64,
 }
 
 impl World {
     pub fn new() -> World {
         World {
-            objects: HashMap::new(),
+            objects: BTreeMap::new(),
             counter: 0,
         }
     }
@@ -23,7 +23,7 @@ impl World {
 }
 
 impl Deref for World {
-    type Target = HashMap<i64, Box<dyn WorldObject>>;
+    type Target = BTreeMap<i64, Box<dyn WorldObject>>;
 
     fn deref(&self) -> &Self::Target {
         &self.objects

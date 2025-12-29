@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::{render::bresenham_line_3d, world_object::WorldObject};
+use crate::{camera::Camera, render::bresenham_line_3d, world_object::WorldObject};
 
 // Adapted from https://stackoverflow.com/a/28938235/12370337
 #[derive(Clone, Copy, PartialEq)]
@@ -82,11 +82,16 @@ impl Terminal {
         // \x1b[H: move cursor to top-left
         print!("{esc}[2J", esc = 27 as char);
 
+        let size = termsize::get().unwrap();
         Terminal {
-            term_width: 0,
-            term_height: 0,
+            term_width: size.cols,
+            term_height: size.rows,
             display: vec![],
         }
+    }
+
+    pub fn get_term_size(&self) -> (u16, u16) {
+        (self.term_width, self.term_height)
     }
 
     // Plot character, assuming x and y are in bounds
@@ -126,33 +131,27 @@ impl Terminal {
         }
     }
 
-    pub fn buffer_world_object(&mut self, obj: &dyn WorldObject, frame: u64) {
+    pub fn buffer_world_object(&mut self, obj: &dyn WorldObject, camera: &dyn Camera, frame: u64) {
         let vertices = obj.vectices();
         let vertex_style = obj.vertex_style();
         let edge_style = obj.edge_style();
         for vertex in &vertices {
-            let (x, y) = (vertex.x.round() as i64, vertex.y.round() as i64);
+            let pojection = camera.project_vector(*vertex);
+            let (x, y) = (pojection.x.round() as i64, pojection.y.round() as i64);
             if self.is_in_bounds(x, y) {
-                self.plot_character(x as u16, y as u16, vertex.z, vertex_style, frame);
+                self.plot_character(x as u16, y as u16, pojection.z, vertex_style, frame);
             }
         }
 
         for edge in obj.edges() {
-            bresenham_line_3d(
-                vertices[edge.0],
-                vertices[edge.1],
-                |pixel: (i64, i64), depth: f64| {
-                    if self.is_in_bounds(pixel.0, pixel.1) {
-                        self.plot_character(
-                            pixel.0 as u16,
-                            pixel.1 as u16,
-                            depth,
-                            edge_style,
-                            frame,
-                        );
-                    }
-                },
-            );
+            let start = camera.project_vector(vertices[edge.0]);
+            let end = camera.project_vector(vertices[edge.1]);
+
+            bresenham_line_3d(start, end, |pixel: (i64, i64), depth: f64| {
+                if self.is_in_bounds(pixel.0, pixel.1) {
+                    self.plot_character(pixel.0 as u16, pixel.1 as u16, depth, edge_style, frame);
+                }
+            });
         }
     }
 

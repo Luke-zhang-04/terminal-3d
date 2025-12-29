@@ -125,7 +125,7 @@ impl Matrix3 {
             }
 
             for compare in row + 1..=2 {
-                if (vec.angle(&Vector3::from(self.mat[compare])).abs() - (PI / 2.0)).abs()
+                if (vec.angle(Vector3::from(self.mat[compare])).abs() - (PI / 2.0)).abs()
                     >= f64::EPSILON
                 {
                     return false;
