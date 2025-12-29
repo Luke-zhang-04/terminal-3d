@@ -1,6 +1,8 @@
 pub mod iso_camera;
+pub mod perspective_camera;
 
 pub use crate::camera::iso_camera::IsoCamera;
+pub use crate::camera::perspective_camera::PerspectiveCamera;
 
 use crate::vector3::Vector3;
 

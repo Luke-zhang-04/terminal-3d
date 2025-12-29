@@ -80,7 +80,7 @@ impl Terminal {
     pub fn new() -> Terminal {
         // \x1b[2J: clear screen
         // \x1b[H: move cursor to top-left
-        print!("{esc}[2J", esc = 27 as char);
+        // print!("{esc}[2J", esc = 27 as char);
 
         let size = termsize::get().unwrap();
         Terminal {
@@ -158,7 +158,7 @@ impl Terminal {
     pub fn render(&mut self) {
         let mut prev_style: Style = (' ', Color::Reset, Decor::None);
         let mut lock = io::stdout().lock();
-        write!(lock, "{esc}[H", esc = 27 as char).unwrap();
+        // write!(lock, "{esc}[H", esc = 27 as char).unwrap();
         write!(lock, "{}", get_style_escape(prev_style)).unwrap();
         for i in 0..self.display.len() {
             let item = &self.display[i];

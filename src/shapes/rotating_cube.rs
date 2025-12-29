@@ -10,17 +10,17 @@ pub struct RotatingCube {
 }
 
 impl RotatingCube {
-    pub fn new() -> RotatingCube {
+    pub fn new(middle: Vector3, size: u16) -> RotatingCube {
         RotatingCube {
             vertices: vec![
-                vector3!(0, 0, 0),
-                vector3!(10, 0, 0),
-                vector3!(10, 10, 0),
-                vector3!(0, 10, 0),
-                vector3!(0, 0, -10),
-                vector3!(10, 0, -10),
-                vector3!(10, 10, -10),
-                vector3!(0, 10, -10),
+                middle + vector3!(-(size as i32), -(size as i32), size as f64 / 2.0),
+                middle + vector3!(size, -(size as i32), size as f64 / 2.0),
+                middle + vector3!(size, size, size as f64 / 2.0),
+                middle + vector3!(-(size as i32), 10, size as f64 / 2.0),
+                middle + vector3!(-(size as i32), -(size as i32), -(size as f64) / 2.0),
+                middle + vector3!(size, -(size as i32), -(size as f64) / 2.0),
+                middle + vector3!(size, size, -(size as f64) / 2.0),
+                middle + vector3!(-(size as i32), 10, -(size as f64) / 2.0),
             ],
             edges: vec![
                 (0, 1),
@@ -36,8 +36,12 @@ impl RotatingCube {
                 (2, 6),
                 (3, 7),
             ],
-            rotation_point: vector3!(5, 5, -5),
+            rotation_point: middle,
         }
+    }
+
+    pub fn default() -> RotatingCube {
+        RotatingCube::new(Vector3::zero(), 10)
     }
 }
 
@@ -68,6 +72,11 @@ impl WorldObject for RotatingCube {
             (0, 1, 0),
             (angle.sin(), 0, angle.cos())
         );
+        // let mat = matrix3!(
+        //     (1, 0, 0),
+        //     (0, angle.cos(), angle.sin()),
+        //     (0, -angle.sin(), angle.cos())
+        // );
         for vertex in &mut self.vertices {
             *vertex = mat * (*vertex - self.rotation_point) + self.rotation_point;
 

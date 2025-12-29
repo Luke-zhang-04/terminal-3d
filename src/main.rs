@@ -20,13 +20,14 @@ static FPS: u16 = 12;
 fn main() {
     let mut world = World::new();
 
-    world.add_world_object(Box::new(shapes::RotatingCube::new()));
+    world.add_world_object(Box::new(shapes::RotatingCube::default()));
     world.add_world_object(Box::new(shapes::Point::new(vector3!(0, 0, -5))));
     world.add_world_object(Box::new(shapes::Point::new(vector3!(20, 20, 0))));
 
     let mut terminal = Terminal::new();
-    let camera = camera::IsoCamera::new(
-        vector3!(0, 10, 10),
+    let camera = camera::PerspectiveCamera::new(
+        90,
+        vector3!(0, 30, 30),
         vector3!(0, -1, -1),
         vector3!(0, 1, -1),
         terminal.get_term_size(),
