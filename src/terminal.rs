@@ -1,4 +1,6 @@
-use std::io::{self, Write};
+use std::io::{self, IsTerminal, Write};
+
+use libc;
 
 use crate::{camera::Camera, render::bresenham_line_3d, world_object::WorldObject};
 
@@ -76,13 +78,32 @@ pub struct Terminal {
     display: Vec<Character>,
 }
 
+// http://rosettacode.org/wiki/Terminal_control/Dimensions#Library:_BSD_libc
+#[repr(C)]
+#[derive(Debug)]
+pub struct Size {
+    pub rows: libc::c_ushort,
+    pub cols: libc::c_ushort,
+}
+
+// Get UNIX terminal size
+fn get_term_size() -> Option<Size> {
+    if !std::io::stdout().is_terminal() {
+        return None;
+    }
+    let mut size = Size { rows: 0, cols: 0 };
+    let result = unsafe { libc::ioctl(libc::STDOUT_FILENO, libc::TIOCGWINSZ, &mut size) };
+
+    if result == 0 { Some(size) } else { None }
+}
+
 impl Terminal {
     pub fn new() -> Terminal {
         // \x1b[2J: clear screen
         // \x1b[H: move cursor to top-left
         print!("{esc}[2J", esc = 27 as char);
 
-        let size = termsize::get().unwrap();
+        let size = get_term_size().unwrap();
         Terminal {
             term_width: size.cols,
             term_height: size.rows,
@@ -112,7 +133,7 @@ impl Terminal {
     }
 
     pub fn pre_render(&mut self) {
-        let size = termsize::get().unwrap();
+        let size = get_term_size().unwrap();
 
         if self.term_height != size.rows || self.term_height != size.cols {
             self.term_height = size.rows;
