@@ -112,12 +112,13 @@ impl Terminal {
     }
 
     pub fn get_term_size(&self) -> (u16, u16) {
-        (self.term_width, self.term_height)
+        (self.term_width, self.term_height * 2) // Report height as doubled
     }
 
     // Plot character, assuming x and y are in bounds
     fn plot_character(&mut self, x: u16, y: u16, depth: f64, style: Style, frame: u64) {
-        let index = y as usize * self.term_width as usize + x as usize;
+        // y coordinate should be halved, because monospace characters 2x as tall as they are wide
+        let index = (y as f32 / 2.0).floor() as usize * self.term_width as usize + x as usize;
 
         if self.display[index].frame != frame || self.display[index].dist > depth {
             self.display[index] = Character {
@@ -129,7 +130,7 @@ impl Terminal {
     }
 
     fn is_in_bounds(&self, x: i64, y: i64) -> bool {
-        x >= 0 && (x as u16) < self.term_width && y >= 0 && (y as u16) < self.term_height
+        x >= 0 && (x as u16) < self.term_width && y >= 0 && y < self.term_height as i64 * 2
     }
 
     pub fn pre_render(&mut self) {
