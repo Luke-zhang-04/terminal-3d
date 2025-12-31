@@ -11,16 +11,18 @@ pub struct RotatingCube {
 
 impl RotatingCube {
     pub fn new(middle: Vector3, size: u16) -> RotatingCube {
+        let half_size = size as f64 / 2.0;
+
         RotatingCube {
             vertices: vec![
-                middle + vector3!(-(size as i32), -(size as i32), size as f64 / 2.0),
-                middle + vector3!(size, -(size as i32), size as f64 / 2.0),
-                middle + vector3!(size, size, size as f64 / 2.0),
-                middle + vector3!(-(size as i32), 10, size as f64 / 2.0),
-                middle + vector3!(-(size as i32), -(size as i32), -(size as f64) / 2.0),
-                middle + vector3!(size, -(size as i32), -(size as f64) / 2.0),
-                middle + vector3!(size, size, -(size as f64) / 2.0),
-                middle + vector3!(-(size as i32), 10, -(size as f64) / 2.0),
+                middle + vector3!(-half_size, -half_size, half_size),
+                middle + vector3!(half_size, -half_size, half_size),
+                middle + vector3!(half_size, half_size, half_size),
+                middle + vector3!(-half_size, half_size, half_size),
+                middle + vector3!(-half_size, -half_size, -half_size),
+                middle + vector3!(half_size, -half_size, -half_size),
+                middle + vector3!(half_size, half_size, -half_size),
+                middle + vector3!(-half_size, half_size, -half_size),
             ],
             edges: vec![
                 (0, 1),
