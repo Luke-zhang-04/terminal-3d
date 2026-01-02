@@ -2,7 +2,13 @@ use std::io::{self, IsTerminal, Write};
 
 use libc;
 
-use crate::{camera::Camera, render::bresenham_line_3d, world_object::WorldObject};
+use crate::{
+    camera::Camera,
+    render::{bounding_box_triangle_3d, bresenham_line_3d},
+    vector3,
+    vector3::Vector3,
+    world_object::WorldObject,
+};
 
 // Adapted from https://stackoverflow.com/a/28938235/12370337
 #[derive(Clone, Copy, PartialEq)]
@@ -157,6 +163,8 @@ impl Terminal {
         let vertices = obj.vectices();
         let vertex_style = obj.vertex_style();
         let edge_style = obj.edge_style();
+        let face_style = obj.face_style();
+
         for vertex in &vertices {
             let pojection = camera.project_vector(*vertex);
             let (x, y) = (pojection.x.round() as i64, pojection.y.round() as i64);
@@ -174,6 +182,32 @@ impl Terminal {
                     self.plot_character(pixel.0 as u16, pixel.1 as u16, depth, edge_style, frame);
                 }
             });
+        }
+
+        for triangle in obj.triangles() {
+            let points = (
+                camera.project_vector(vertices[triangle.0]),
+                camera.project_vector(vertices[triangle.1]),
+                camera.project_vector(vertices[triangle.2]),
+            );
+
+            // Check direction, perform culling if needed
+            let direction =
+                ((points.1 - points.0).with_z(0.0) * (points.2 - points.0).with_z(0.0)).normalize();
+
+            if direction == vector3!(0, 0, -1) {
+                bounding_box_triangle_3d(points, |pixel: (i64, i64), depth: f64| {
+                    if self.is_in_bounds(pixel.0, pixel.1) {
+                        self.plot_character(
+                            pixel.0 as u16,
+                            pixel.1 as u16,
+                            depth,
+                            face_style,
+                            frame,
+                        );
+                    }
+                });
+            }
         }
     }
 

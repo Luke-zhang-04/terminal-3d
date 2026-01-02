@@ -4,10 +4,13 @@ use crate::vector3::Vector3;
 pub trait WorldObject {
     fn vectices(&self) -> Vec<Vector3>;
 
+    /// Triangles are defined by tuples of indexes corresponding to vercites.
+    /// They should be defined in counterclockwise order.
     fn triangles(&self) -> Vec<(usize, usize, usize)> {
         Vec::new()
     }
 
+    /// Edges are defined by tuples of indexes corresponding to vertices.
     fn edges(&self) -> Vec<(usize, usize)> {
         Vec::new()
     }

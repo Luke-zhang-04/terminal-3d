@@ -110,6 +110,31 @@ impl Vector3 {
         }
     }
 
+    // Convinence methods to allow inline-setting of values
+    pub fn with_x(self, val: f64) -> Vector3 {
+        Vector3 {
+            x: val,
+            y: self.y,
+            z: self.z,
+        }
+    }
+
+    pub fn with_y(self, val: f64) -> Vector3 {
+        Vector3 {
+            x: self.x,
+            y: val,
+            z: self.z,
+        }
+    }
+
+    pub fn with_z(self, val: f64) -> Vector3 {
+        Vector3 {
+            x: self.x,
+            y: self.y,
+            z: val,
+        }
+    }
+
     pub fn to_string(&self) -> String {
         format!("({}, {}, {})", self.x, self.y, self.z)
     }
