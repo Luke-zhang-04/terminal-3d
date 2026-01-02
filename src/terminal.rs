@@ -72,10 +72,22 @@ fn get_style_escape(style: Style) -> String {
     )
 }
 
+/// Lower number -> higher priority
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+enum DrawType {
+    Vertex,
+    Edge,
+    Face,
+    None,
+}
+
+#[allow(unused)]
 struct Character {
     pub frame: u64,
     pub style: Style,
     pub dist: f64,
+    pub shape_id: u64,
+    pub draw_type: DrawType,
 }
 
 pub struct Terminal {
@@ -122,15 +134,31 @@ impl Terminal {
     }
 
     // Plot character, assuming x and y are in bounds
-    fn plot_character(&mut self, x: u16, y: u16, depth: f64, style: Style, frame: u64) {
+    fn plot_character(
+        &mut self,
+        x: u16,
+        y: u16,
+        depth: f64,
+        style: Style,
+        shape_id: u64,
+        draw_type: DrawType,
+        frame: u64,
+    ) {
         // y coordinate should be halved, because monospace characters 2x as tall as they are wide
         let index = (y as f32 / 2.0).floor() as usize * self.term_width as usize + x as usize;
+        let cur_pixel = &self.display[index];
 
-        if self.display[index].frame != frame || self.display[index].dist > depth {
+        let is_same_frame = cur_pixel.frame == frame;
+        let is_drawtype_none = cur_pixel.draw_type == DrawType::None;
+        let is_in_front = cur_pixel.dist > depth;
+
+        if !is_same_frame || is_drawtype_none || is_in_front {
             self.display[index] = Character {
                 frame,
                 style: style,
                 dist: depth,
+                shape_id,
+                draw_type,
             }
         }
     }
@@ -154,12 +182,20 @@ impl Terminal {
                     frame: 0,
                     style: (' ', Color::Reset, Decor::None),
                     dist: 0.0,
+                    draw_type: DrawType::None,
+                    shape_id: 0,
                 });
             }
         }
     }
 
-    pub fn buffer_world_object(&mut self, obj: &dyn WorldObject, camera: &dyn Camera, frame: u64) {
+    pub fn buffer_world_object(
+        &mut self,
+        shape_id: u64,
+        obj: &dyn WorldObject,
+        camera: &dyn Camera,
+        frame: u64,
+    ) {
         let vertices = obj.vectices();
         let vertex_style = obj.vertex_style();
         let edge_style = obj.edge_style();
@@ -169,7 +205,15 @@ impl Terminal {
             let pojection = camera.project_vector(*vertex);
             let (x, y) = (pojection.x.round() as i64, pojection.y.round() as i64);
             if self.is_in_bounds(x, y) {
-                self.plot_character(x as u16, y as u16, pojection.z, vertex_style, frame);
+                self.plot_character(
+                    x as u16,
+                    y as u16,
+                    pojection.z,
+                    vertex_style,
+                    shape_id,
+                    DrawType::Vertex,
+                    frame,
+                );
             }
         }
 
@@ -179,7 +223,15 @@ impl Terminal {
 
             bresenham_line_3d(start, end, |pixel: (i64, i64), depth: f64| {
                 if self.is_in_bounds(pixel.0, pixel.1) {
-                    self.plot_character(pixel.0 as u16, pixel.1 as u16, depth, edge_style, frame);
+                    self.plot_character(
+                        pixel.0 as u16,
+                        pixel.1 as u16,
+                        depth,
+                        edge_style,
+                        shape_id,
+                        DrawType::Edge,
+                        frame,
+                    );
                 }
             });
         }
@@ -203,6 +255,8 @@ impl Terminal {
                             pixel.1 as u16,
                             depth,
                             face_style,
+                            shape_id,
+                            DrawType::Face,
                             frame,
                         );
                     }

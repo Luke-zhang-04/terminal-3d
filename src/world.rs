@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 use std::ops::{Deref, DerefMut};
 
 pub struct World {
-    objects: BTreeMap<i64, Box<dyn WorldObject>>,
-    counter: i64,
+    objects: BTreeMap<u64, Box<dyn WorldObject>>,
+    counter: u64,
 }
 
 impl World {
@@ -16,14 +16,13 @@ impl World {
     }
 
     pub fn add_world_object(&mut self, obj: Box<dyn WorldObject>) {
+        self.objects.insert(self.counter, obj);
         self.counter += 1;
-
-        self.objects.insert(self.counter - 1, obj);
     }
 }
 
 impl Deref for World {
-    type Target = BTreeMap<i64, Box<dyn WorldObject>>;
+    type Target = BTreeMap<u64, Box<dyn WorldObject>>;
 
     fn deref(&self) -> &Self::Target {
         &self.objects

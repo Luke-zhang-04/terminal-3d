@@ -34,14 +34,14 @@ fn main() {
     );
     let frame_time = Duration::from_secs_f64(1.0 / FPS as f64);
 
-    for frame in 1..=200 {
+    for frame in 0..200 {
         let start = time::Instant::now();
         for obj in world.values_mut() {
             obj.deref_mut().update(frame);
         }
         terminal.pre_render();
-        for obj in world.values() {
-            terminal.buffer_world_object(obj.deref(), &camera, frame);
+        for (id, obj) in world.iter() {
+            terminal.buffer_world_object(*id, obj.deref(), &camera, frame);
         }
         let end = time::Instant::now();
         if end - start < frame_time {

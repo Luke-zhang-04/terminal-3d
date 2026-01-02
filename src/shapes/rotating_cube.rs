@@ -65,7 +65,7 @@ impl WorldObject for RotatingCube {
     }
 
     fn update(&mut self, frame: u64) {
-        if frame == 1 {
+        if frame == 0 {
             return;
         };
         let angle = PI / 36.0; // 5 degrees
