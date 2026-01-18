@@ -6,19 +6,29 @@ use crate::{matrix3::Matrix3, terminal, vector3::Vector3, world_object::WorldObj
 pub struct RotatingSquare {
     vertices: Vec<Vector3>,
     edges: Vec<(usize, usize)>,
+    triangles: Vec<(usize, usize, usize)>,
+    rotation_point: Vector3,
 }
 
 impl RotatingSquare {
-    pub fn new() -> RotatingSquare {
+    pub fn new(middle: Vector3, size: u16) -> RotatingSquare {
+        let half_size = size as f64 / 2.0;
+
         RotatingSquare {
             vertices: vec![
-                vector3!(0, 0, 0),
-                vector3!(10, 0, 0),
-                vector3!(10, 10, 0),
-                vector3!(0, 10, 0),
+                middle + vector3!(-half_size, -half_size, half_size),
+                middle + vector3!(half_size, -half_size, half_size),
+                middle + vector3!(half_size, half_size, half_size),
+                middle + vector3!(-half_size, half_size, half_size),
             ],
             edges: vec![(0, 1), (1, 2), (2, 3), (3, 0)],
+            triangles: vec![(0, 2, 3), (0, 1, 2)],
+            rotation_point: middle,
         }
+    }
+
+    pub fn default() -> RotatingSquare {
+        RotatingSquare::new(Vector3::zero(), 10)
     }
 }
 
@@ -39,6 +49,10 @@ impl WorldObject for RotatingSquare {
         self.edges.clone()
     }
 
+    fn triangles(&self) -> Vec<(usize, usize, usize)> {
+        self.triangles.clone()
+    }
+
     fn update(&mut self, frame: u64) {
         if frame == 0 {
             return;
@@ -49,10 +63,9 @@ impl WorldObject for RotatingSquare {
             (-angle.sin(), angle.cos(), 0),
             (0, 0, 1)
         );
-        let rotation_center = vector3!(10, 10, 0);
 
         for vertex in &mut self.vertices {
-            *vertex = mat * (*vertex - rotation_center) + rotation_center;
+            *vertex = mat * (*vertex - self.rotation_point) + self.rotation_point;
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::{matrix3::Matrix3, terminal, vector3::Vector3, world_object::WorldObj
 pub struct RotatingCube {
     vertices: Vec<Vector3>,
     edges: Vec<(usize, usize)>,
+    faces: Vec<(usize, usize, usize)>,
     rotation_point: Vector3,
 }
 
@@ -38,6 +39,20 @@ impl RotatingCube {
                 (2, 6),
                 (3, 7),
             ],
+            faces: vec![
+                (0, 1, 2),
+                (0, 2, 3),
+                (1, 5, 6),
+                (1, 6, 2),
+                (5, 4, 7),
+                (5, 7, 6),
+                (4, 0, 3),
+                (4, 3, 7),
+                (3, 2, 6),
+                (3, 6, 7),
+                (0, 1, 5),
+                (0, 5, 4),
+            ],
             rotation_point: middle,
         }
     }
@@ -61,7 +76,12 @@ impl WorldObject for RotatingCube {
     }
 
     fn edges(&self) -> Vec<(usize, usize)> {
+        // TODO: can we do this without a deep copy?
         self.edges.clone()
+    }
+
+    fn triangles(&self) -> Vec<(usize, usize, usize)> {
+        self.faces.clone()
     }
 
     fn update(&mut self, frame: u64) {

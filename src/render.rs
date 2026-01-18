@@ -33,8 +33,7 @@ pub fn bresenham_line_3d(
     let dx = x1 - x0; // dx will always be positive
     let dy = y1 - y0;
     let dz = end.z - start.z;
-    let depth_inc = dz / (dx + 1) as f64; // Note that with this method, the floating-point error gets magnified.
-
+    let depth_inc = dz / dx as f64;
     let mut err: i64 = 0;
     let mut y = y0;
     let mut depth = start.z;
@@ -52,11 +51,7 @@ pub fn bresenham_line_3d(
             err -= dx;
         }
 
-        if x == x1 - 1 {
-            depth = end.z; // At the end of the line segment, account for rounding error
-        } else {
-            depth += depth_inc;
-        }
+        depth += depth_inc;
     }
 }
 
@@ -109,22 +104,6 @@ fn get_triangle_area((a, b, c): VertexTriple) -> f64 {
 /// (i.e no back-face culling is done). If a triangle is not facing the camera, this function
 /// should not be invoked at all.
 pub fn bounding_box_triangle_3d(vertices: VertexTriple, mut generate: impl FnMut((i64, i64), f64)) {
-    let vertices_sorted_y = sort_by_y(vertices);
-    let vertices_sorted_x = sort_by_x(vertices);
-
-    // Normal vector of the plane formed by the triangle
-    let plane_normal =
-        (vertices_sorted_x.2 - vertices_sorted_x.1) * (vertices_sorted_x.0 - vertices_sorted_x.1);
-
-    let y_range = (
-        vertices_sorted_y.0.y.round() as i64,
-        vertices_sorted_y.2.y.round() as i64,
-    );
-    let x_range = (
-        vertices_sorted_x.0.x.round() as i64,
-        vertices_sorted_x.2.x.round() as i64,
-    );
-
     let triangle_area = get_triangle_area(vertices);
 
     // Degenerate triangle
@@ -132,25 +111,40 @@ pub fn bounding_box_triangle_3d(vertices: VertexTriple, mut generate: impl FnMut
         return;
     }
 
+    let vertices_sorted_y = sort_by_y(vertices);
+    let vertices_sorted_x = sort_by_x(vertices);
+
+    let y_range = (
+        vertices_sorted_y.0.y.round() as i64,
+        vertices_sorted_y.2.y.round() as i64,
+    );
+    let y_round_err = vertices_sorted_y.0.y - y_range.0 as f64;
+    let x_range = (
+        vertices_sorted_x.0.x.round() as i64,
+        vertices_sorted_x.2.x.round() as i64,
+    );
+    let x_round_err = vertices_sorted_x.0.x - x_range.0 as f64;
+
     // Loop through each coordinate in the bounding box
     for y in y_range.0..=y_range.1 {
         for x in x_range.0..=x_range.1 {
             let point = vector3!(x, y, 0);
+            let corrected_point = point + vector3!(x_round_err, y_round_err, 0);
 
             // Determine if (x, y) is inside the triangle defined by vertices
-            let alpha = get_triangle_area((point, vertices.1, vertices.2)) / triangle_area;
-            let beta = get_triangle_area((point, vertices.2, vertices.0)) / triangle_area;
-            let gamma = get_triangle_area((point, vertices.0, vertices.1)) / triangle_area;
+            let alpha =
+                get_triangle_area((corrected_point, vertices.1, vertices.2)) / triangle_area;
+            let beta = get_triangle_area((corrected_point, vertices.2, vertices.0)) / triangle_area;
+            let gamma =
+                get_triangle_area((corrected_point, vertices.0, vertices.1)) / triangle_area;
 
-            // Compiler will optimize this, right?
             if alpha < 0.0 || beta < 0.0 || gamma < 0.0 {
                 continue;
             }
 
-            let distance =
-                (point - vertices.0).dot(plane_normal) / vector3!(0, 0, -1).dot(plane_normal);
+            let depth = alpha * vertices.0.z + beta * vertices.1.z + gamma * vertices.2.z;
 
-            generate((x, y), distance);
+            generate((x, y), depth);
         }
     }
 }

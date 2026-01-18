@@ -2,6 +2,12 @@ use std::io::{self, IsTerminal, Write};
 
 use libc;
 
+/// How far in front of an existing pixel another pixel has to be to be considered "in front".
+/// Distance calculations are inaccurate because we round coordinates to the nearest terminal
+/// character. If two characters on the z-buffer are of near-equal depth, whichever pixel was
+/// there first gets priority.
+const DIST_THRESHOLD: f64 = 0.05;
+
 use crate::{
     camera::Camera,
     render::{bounding_box_triangle_3d, bresenham_line_3d},
@@ -150,7 +156,7 @@ impl Terminal {
 
         let is_same_frame = cur_pixel.frame == frame;
         let is_drawtype_none = cur_pixel.draw_type == DrawType::None;
-        let is_in_front = cur_pixel.dist > depth;
+        let is_in_front = cur_pixel.dist - depth > DIST_THRESHOLD;
 
         if !is_same_frame || is_drawtype_none || is_in_front {
             self.display[index] = Character {
@@ -202,13 +208,13 @@ impl Terminal {
         let face_style = obj.face_style();
 
         for vertex in &vertices {
-            let pojection = camera.project_vector(*vertex);
-            let (x, y) = (pojection.x.round() as i64, pojection.y.round() as i64);
-            if self.is_in_bounds(x, y) {
+            let projection = camera.project_vector(*vertex);
+            let (x, y) = (projection.x.round() as i64, projection.y.round() as i64);
+            if self.is_in_bounds(x, y) && projection.z > 0.0 {
                 self.plot_character(
                     x as u16,
                     y as u16,
-                    pojection.z,
+                    projection.z,
                     vertex_style,
                     shape_id,
                     DrawType::Vertex,
@@ -222,7 +228,7 @@ impl Terminal {
             let end = camera.project_vector(vertices[edge.1]);
 
             bresenham_line_3d(start, end, |pixel: (i64, i64), depth: f64| {
-                if self.is_in_bounds(pixel.0, pixel.1) {
+                if self.is_in_bounds(pixel.0, pixel.1) && depth > 0.0 {
                     self.plot_character(
                         pixel.0 as u16,
                         pixel.1 as u16,
@@ -249,7 +255,7 @@ impl Terminal {
 
             if direction == vector3!(0, 0, -1) {
                 bounding_box_triangle_3d(points, |pixel: (i64, i64), depth: f64| {
-                    if self.is_in_bounds(pixel.0, pixel.1) {
+                    if self.is_in_bounds(pixel.0, pixel.1) && depth > 0.0 {
                         self.plot_character(
                             pixel.0 as u16,
                             pixel.1 as u16,
