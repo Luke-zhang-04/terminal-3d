@@ -21,8 +21,14 @@ fn main() {
     let mut world = World::new();
 
     world.add_world_object(Box::new(shapes::RotatingCube::default()));
-    world.add_world_object(Box::new(shapes::Point::new(vector3!(0, 0, -5))));
-    world.add_world_object(Box::new(shapes::Point::new(vector3!(20, 20, 0))));
+    world.add_world_object(Box::new(shapes::Point::new(
+        vector3!(0, 0, -5),
+        terminal::Color::Blue,
+    )));
+    world.add_world_object(Box::new(shapes::Point::new(
+        vector3!(20, 20, 0),
+        terminal::Color::Red,
+    )));
 
     let mut terminal = Terminal::new();
     let camera = camera::PerspectiveCamera::new(

@@ -2,11 +2,12 @@ use crate::{terminal, vector3::Vector3, world_object::WorldObject};
 
 pub struct Point {
     coordinate: Vector3,
+    color: terminal::Color,
 }
 
 impl Point {
-    pub fn new(coordinate: Vector3) -> Point {
-        Point { coordinate }
+    pub fn new(coordinate: Vector3, color: terminal::Color) -> Point {
+        Point { coordinate, color }
     }
 }
 
@@ -16,10 +17,6 @@ impl WorldObject for Point {
     }
 
     fn vertex_style(&self) -> terminal::Style {
-        (
-            '+',
-            terminal::Color::Green,
-            terminal::Decor::BoldHighIntensity,
-        )
+        ('+', self.color, terminal::Decor::BoldHighIntensity)
     }
 }
