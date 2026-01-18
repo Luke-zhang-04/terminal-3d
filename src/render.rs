@@ -33,8 +33,7 @@ pub fn bresenham_line_3d(
     let dx = x1 - x0; // dx will always be positive
     let dy = y1 - y0;
     let dz = end.z - start.z;
-    let depth_inc = dz / (dx + 1) as f64; // Note that with this method, the floating-point error gets magnified.
-
+    let depth_inc = dz / dx as f64;
     let mut err: i64 = 0;
     let mut y = y0;
     let mut depth = start.z;
@@ -52,11 +51,7 @@ pub fn bresenham_line_3d(
             err -= dx;
         }
 
-        if x == x1 - 1 {
-            depth = end.z; // At the end of the line segment, account for rounding error
-        } else {
-            depth += depth_inc;
-        }
+        depth += depth_inc;
     }
 }
 
