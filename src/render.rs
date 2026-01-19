@@ -118,25 +118,20 @@ pub fn bounding_box_triangle_3d(vertices: VertexTriple, mut generate: impl FnMut
         vertices_sorted_y.0.y.round() as i64,
         vertices_sorted_y.2.y.round() as i64,
     );
-    let y_round_err = vertices_sorted_y.0.y - y_range.0 as f64;
     let x_range = (
         vertices_sorted_x.0.x.round() as i64,
         vertices_sorted_x.2.x.round() as i64,
     );
-    let x_round_err = vertices_sorted_x.0.x - x_range.0 as f64;
 
     // Loop through each coordinate in the bounding box
     for y in y_range.0..=y_range.1 {
         for x in x_range.0..=x_range.1 {
             let point = vector3!(x, y, 0);
-            let corrected_point = point + vector3!(x_round_err, y_round_err, 0);
 
             // Determine if (x, y) is inside the triangle defined by vertices
-            let alpha =
-                get_triangle_area((corrected_point, vertices.1, vertices.2)) / triangle_area;
-            let beta = get_triangle_area((corrected_point, vertices.2, vertices.0)) / triangle_area;
-            let gamma =
-                get_triangle_area((corrected_point, vertices.0, vertices.1)) / triangle_area;
+            let alpha = get_triangle_area((point, vertices.1, vertices.2)) / triangle_area;
+            let beta = get_triangle_area((point, vertices.2, vertices.0)) / triangle_area;
+            let gamma = get_triangle_area((point, vertices.0, vertices.1)) / triangle_area;
 
             if alpha < 0.0 || beta < 0.0 || gamma < 0.0 {
                 continue;
