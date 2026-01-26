@@ -16,10 +16,10 @@ impl RotatingSquare {
 
         RotatingSquare {
             vertices: vec![
-                middle + vector3!(-half_size, -half_size, half_size),
-                middle + vector3!(half_size, -half_size, half_size),
-                middle + vector3!(half_size, half_size, half_size),
-                middle + vector3!(-half_size, half_size, half_size),
+                middle + vector3!(-half_size, -half_size, 0),
+                middle + vector3!(half_size, -half_size, 0),
+                middle + vector3!(half_size, half_size, 0),
+                middle + vector3!(-half_size, half_size, 0),
             ],
             edges: vec![(0, 1), (1, 2), (2, 3), (3, 0)],
             triangles: vec![(0, 2, 3), (0, 1, 2)],
@@ -59,9 +59,9 @@ impl WorldObject for RotatingSquare {
         };
         let angle = PI / 36.0; // 5 degrees
         let mat = matrix3!(
-            (angle.cos(), angle.sin(), 0),
-            (-angle.sin(), angle.cos(), 0),
-            (0, 0, 1)
+            (angle.cos(), 0, -angle.sin()),
+            (0, 1, 0),
+            (angle.sin(), 0, angle.cos())
         );
 
         for vertex in &mut self.vertices {
