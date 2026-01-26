@@ -96,6 +96,16 @@ fn get_triangle_area((a, b, c): VertexTriple) -> f64 {
     ((b.y - a.y) * (b.x + a.x) + (c.y - b.y) * (c.x + b.x) + (a.y - c.y) * (a.x + c.x)) / 2.0
 }
 
+/// Return alpha, beta, gamma barycentric weights of point inside triangle with area
+/// Area of `triangle` is a parameter so it isn't re-calculated every time
+fn get_bary_weights(point: Vector3, triangle: VertexTriple, area: f64) -> (f64, f64, f64) {
+    (
+        get_triangle_area((point, triangle.1, triangle.2)) / area,
+        get_triangle_area((point, triangle.2, triangle.0)) / area,
+        get_triangle_area((point, triangle.0, triangle.1)) / area,
+    )
+}
+
 /// Implementation of a bounding-box-style triangle face renderer, which finds a bounding rectangle
 /// around the 3 points, and then tests every point in the box to see if it is in the triangle.
 /// All vectors have x and y components relative to the camera screen, and the z component
@@ -125,16 +135,29 @@ pub fn bounding_box_triangle_3d(vertices: VertexTriple, mut generate: impl FnMut
 
     // Loop through each coordinate in the bounding box
     for y in y_range.0..=y_range.1 {
-        for x in x_range.0..=x_range.1 {
+        'x_loop: for x in x_range.0..=x_range.1 {
             let point = vector3!(x, y, 0);
 
             // Determine if (x, y) is inside the triangle defined by vertices
-            let alpha = get_triangle_area((point, vertices.1, vertices.2)) / triangle_area;
-            let beta = get_triangle_area((point, vertices.2, vertices.0)) / triangle_area;
-            let gamma = get_triangle_area((point, vertices.0, vertices.1)) / triangle_area;
+            let (alpha, beta, gamma) = get_bary_weights(point, vertices, triangle_area);
 
             if alpha < 0.0 || beta < 0.0 || gamma < 0.0 {
                 continue;
+            }
+
+            // Check all 4 corners, and skip if point is on edge/corner
+            // This is super scuffed, but because of the way we calculate depth and the coarsness
+            // of the terminal, the face pixels sometimes have their depths calculated to be in front
+            // of the shapes edges.
+            for dx in [-0.5, 0.5] {
+                for dy in [-0.5, 0.5] {
+                    let weights =
+                        get_bary_weights(point + vector3!(dx, dy, 0), vertices, triangle_area);
+
+                    if weights.0 < 0.0 || weights.1 < 0.0 || weights.2 < 0.0 {
+                        continue 'x_loop;
+                    }
+                }
             }
 
             let depth = alpha * vertices.0.z + beta * vertices.1.z + gamma * vertices.2.z;
@@ -142,4 +165,18 @@ pub fn bounding_box_triangle_3d(vertices: VertexTriple, mut generate: impl FnMut
             generate((x, y), depth);
         }
     }
+
+    // Now, fill in the missing lines
+    bresenham_line_3d(vertices.0, vertices.1, |pixel, depth| {
+        generate(pixel, depth)
+    });
+    bresenham_line_3d(vertices.1, vertices.2, |pixel, depth| {
+        generate(pixel, depth)
+    });
+    bresenham_line_3d(vertices.2, vertices.0, |pixel, depth| {
+        generate(pixel, depth)
+    });
+
+    // Unfortunately this is far from perfect, as sometimes there are gaps in the face
+    // TODO: re-architect the render pipeline to just use this bounding box method
 }
