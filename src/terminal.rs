@@ -201,6 +201,8 @@ impl Terminal {
         let edge_style = obj.edge_style();
         let face_style = obj.face_style();
 
+        // Render vertices, edges, then faces
+
         for vertex in &vertices {
             let projection = camera.project_vector(*vertex);
             let (x, y) = (projection.x.round() as i64, projection.y.round() as i64);
@@ -253,7 +255,9 @@ impl Terminal {
                         self.plot_character(
                             pixel.0 as u16,
                             pixel.1 as u16,
-                            depth.round() as i64,
+                            // Ceiling the number instead of rounding ensures the face is always behind
+                            // the edge, to account for imprecision in some calculations
+                            depth.ceil() as i64,
                             face_style,
                             shape_id,
                             DrawType::Face,
