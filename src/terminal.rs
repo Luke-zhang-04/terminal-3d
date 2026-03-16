@@ -2,12 +2,6 @@ use std::io::{self, IsTerminal, Write};
 
 use libc;
 
-/// How far in front of an existing pixel another pixel has to be to be considered "in front".
-/// Distance calculations are inaccurate because we round coordinates to the nearest terminal
-/// character. If two characters on the z-buffer are of near-equal depth, whichever pixel was
-/// there first gets priority.
-const DIST_THRESHOLD: f64 = 0.05;
-
 use crate::{
     camera::Camera,
     render::{bounding_box_triangle_3d, bresenham_line_3d},
@@ -91,7 +85,7 @@ enum DrawType {
 struct Character {
     pub frame: u64,
     pub style: Style,
-    pub dist: f64,
+    pub dist: i64,
     pub shape_id: u64,
     pub draw_type: DrawType,
 }
@@ -144,7 +138,7 @@ impl Terminal {
         &mut self,
         x: u16,
         y: u16,
-        depth: f64,
+        depth: i64,
         style: Style,
         shape_id: u64,
         draw_type: DrawType,
@@ -156,7 +150,7 @@ impl Terminal {
 
         let is_same_frame = cur_pixel.frame == frame;
         let is_drawtype_none = cur_pixel.draw_type == DrawType::None;
-        let is_in_front = cur_pixel.dist - depth > DIST_THRESHOLD;
+        let is_in_front = cur_pixel.dist > depth;
 
         if !is_same_frame || is_drawtype_none || is_in_front {
             self.display[index] = Character {
@@ -187,7 +181,7 @@ impl Terminal {
                 self.display.push(Character {
                     frame: 0,
                     style: (' ', Color::Reset, Decor::None),
-                    dist: 0.0,
+                    dist: 0,
                     draw_type: DrawType::None,
                     shape_id: 0,
                 });
@@ -214,7 +208,7 @@ impl Terminal {
                 self.plot_character(
                     x as u16,
                     y as u16,
-                    projection.z,
+                    projection.z.round() as i64,
                     vertex_style,
                     shape_id,
                     DrawType::Vertex,
@@ -232,7 +226,7 @@ impl Terminal {
                     self.plot_character(
                         pixel.0 as u16,
                         pixel.1 as u16,
-                        depth,
+                        depth.round() as i64,
                         edge_style,
                         shape_id,
                         DrawType::Edge,
@@ -259,7 +253,7 @@ impl Terminal {
                         self.plot_character(
                             pixel.0 as u16,
                             pixel.1 as u16,
-                            depth,
+                            depth.round() as i64,
                             face_style,
                             shape_id,
                             DrawType::Face,
