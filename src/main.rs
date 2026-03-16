@@ -21,7 +21,6 @@ fn main() {
     let mut world = World::new();
 
     world.add_world_object(Box::new(shapes::RotatingCube::default()));
-    // world.add_world_object(Box::new(shapes::RotatingSquare::default()));
     world.add_world_object(Box::new(shapes::Point::new(
         vector3!(0, 0, -5),
         terminal::Color::Blue,
@@ -39,7 +38,6 @@ fn main() {
         vector3!(0, 1, -1),
         terminal.get_term_size(),
     );
-    // let camera = camera::PerspectiveCamera::default(terminal.get_term_size());
     let frame_time = Duration::from_secs_f64(1.0 / FPS as f64);
 
     for frame in 0..200 {
@@ -48,7 +46,6 @@ fn main() {
             obj.deref_mut().update(frame);
         }
         terminal.pre_render();
-
         for (id, obj) in world.iter() {
             terminal.buffer_world_object(*id, obj.deref(), &camera, frame);
         }
